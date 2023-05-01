@@ -1,4 +1,5 @@
 import sqlite3
+import os
 
 DB_FILE = 'BDD.db'
 SQL_FILE = 'BDD.sql'
@@ -95,25 +96,27 @@ def info_util(pseudo_utilisateur):
                 }
             
             status : 
-                0 -> {id_utilisateur : INT, pseudo_utilisateur : STR,...}
+                0 -> {id_utilisateur : INT, pseudo_utilisateur : STR, bio : STR}
                 1 -> 'Type not STR'
                 2 -> 'INPUT Lenght not between 5, 20'
                 3 -> 'INPUT Not in database'
     '''
     global DB_FILE, SQL_FILE
+
     #test status 1
     if type(pseudo_utilisateur) != str:
         return ({'status' : 1, 'data' : ['INPUT type not STR']})
+
     #test status 2
     elif len(pseudo_utilisateur) <5 or len(pseudo_utilisateur)>20:
         return ({"status" : 2, "data" : ['INPUT Length not between 5, 20']})
+
     #test status 3
     erreur3 = True
     data3 = list_util()['data']
     for i in range (len(data3)):
         if pseudo_utilisateur == data3[i]['pseudo_utilisateur']:
-            erreur3 = False
-            
+            erreur3 = False        
     if erreur3 == True:
         return {"status" : 3, "data": ['INPUT Not in database']}
     
@@ -127,7 +130,7 @@ def info_util(pseudo_utilisateur):
 
     for elm in rows:
         if elm[1] == pseudo_utilisateur:
-            data = [{'id_utilisateur' : elm[0],'pseudo_utilisateur': elm[1]}]
+            data = [{'id_utilisateur' :elm[0],'pseudo_utilisateur' :elm[1], 'bio' :elm[2]}]
             return({'status' : 0, 'data' : data})
 
 def ajouter_amis(pseudo_utilisateur, pseudo_utilisateur_a_ajouter):
@@ -299,6 +302,98 @@ def supprimer_amis(pseudo_utilisateur, pseudo_utilisateur_a_supp):
 
     return{'status' :0, 'data' : []}
 
+def ajouter_bio(pseudo_utilisateur, bio):
+    """
+    Cette fonction ajoute une bio à un utilisateur donné pseudo_utilisateur.
+        
+            INPUT
+                pseudo_utilisateur type STR
+                bio type STR
+
+            OUTPUT
+        
+                Type Dict {
+                    status : 
+                    data : []
+                    }
+
+                status : 
+                    0 -> None
+                    1 -> 'INPUT Not registed in UTILISATEUR'
+                    2 -> 'INPUT Length superior at 150'
+    """
+    global DB_FILE, SQL_FILE
+
+
+    #test status 1
+    erreur3 = True
+    data3 = list_util()['data']
+    for i in range (len(data3)):
+        if pseudo_utilisateur == data3[i]['pseudo_utilisateur']:
+            erreur3 = False
+    if erreur3 == True:
+        return {'status' : 1, 'data': ['INPUT Not Registered in UTILISATEUR']}
+    
+    #test status 2
+    if len(bio) > 150:
+        return {'status' : 2, 'data' : ['INPUT Length superior at 150']}
+        
+        
+    conn = sqlite3.connect(DB_FILE)
+    conn.execute("PRAGMA foreign_keys = 1")
+    cur = conn.cursor()
+    cur.execute(f"UPDATE UTILISATEUR SET bio = '{bio}' WHERE pseudo_utilisateur = '{pseudo_utilisateur}'")
+    conn.commit()
+    # Fermeture de la connexion a la bdd
+    conn.close()
+
+    return {'status' : 0, 'data' : []}
+
+def modifier_bio(pseudo_utilisateur, bio):
+    '''
+    Cette fonction permet de modifier une bio déjà écrite de pseudo utilisateurs.
+
+        INPUT
+            pseudo_utilisateur type STR
+
+        OUTPUT
+    
+            Type Dict {
+                status : 
+                data : []
+                }
+
+            status : 
+                0 -> None
+                1 -> 'INPUT Not registered in UTILISATEUR'
+                2 -> 'INPUT There is no bio'
+    '''
+    global DB_FILE, SQL_FILE
+
+
+    #status 1
+    erreur1 = True
+    data1 = list_util()['data']
+    for i in range (len(data1)):
+        if pseudo_utilisateur == data1[i]['pseudo_utilisateur']:
+            erreur1 = False
+
+    if erreur1 == True:
+        return {'status' : 1, 'data': ['INPUT Not Registered in UTILISATEUR']}
+
+    #status 2
+    if info_util(pseudo_utilisateur)['data'][0]['bio'] == "":
+        return{'status' : 2, 'data' : ['INPUT There is no bio']}
+
+    conn = sqlite3.connect(DB_FILE)
+    conn.execute("PRAGMA foreign_keys = 1")
+    cur = conn.cursor()
+    cur.execute(f"UPDATE UTILISATEUR SET bio = '{bio}' WHERE pseudo_utilisateur = '{pseudo_utilisateur}'")
+    conn.commit()
+    conn.close()
+
+    return{'status' :0, 'data' : []}
+
 def execution_SQL(SQL_FILE):
     global DB_FILE 
 
@@ -347,7 +442,7 @@ if __name__ == "__main__":
     assert list_util() == {"status" : 0, "data" : [{"id_utilisateur" : 1, "pseudo_utilisateur" : 'Tom.clv'},{"id_utilisateur": 2, "pseudo_utilisateur": 'Dorian.jsr'},{"id_utilisateur" : 3, "pseudo_utilisateur" : 'Nyn.luk'},{"id_utilisateur" : 4, "pseudo_utilisateur" : 'Guilbert'}]}
 
     #teste de info_util()
-    assert info_util('Dorian.jsr') == {"status" : 0, "data": [{"id_utilisateur": 2, "pseudo_utilisateur": 'Dorian.jsr'}]}
+    assert info_util('Dorian.jsr') == {"status" : 0, "data": [{"id_utilisateur": 2, "pseudo_utilisateur": 'Dorian.jsr', 'bio': ""}]}
     assert info_util(1880) == {"status" : 1, "data" : ['INPUT type not STR']}
     assert info_util('Le.Boulanger.Qui.Fait.Du.Pain') == {"status" : 2, "data" : ['INPUT Length not between 5, 20']}
     assert info_util(' ') == {"status" : 2, "data" : ['INPUT Length not between 5, 20']}
@@ -389,6 +484,20 @@ if __name__ == "__main__":
     #Vérification de l'éxécution
     assert voir_amis('Tom.clv') == {"status" : 0, "data": ['Nyn.luk']}
 
-    
-    DB_FILE = 'BDD.db'
+    #test de ajouter_bio
+    assert ajouter_bio('Tom.clv', 'Ego similis valde conditus litterarum stews, opera honestatis, ubi quaedam flax sensus reponit buxom salutem classical eras.') == {"status" : 0, "data": []}
+    assert ajouter_bio("Josseline", "j'aime la cuisine") == {'status' : 1, 'data' : ['INPUT Not Registered in UTILISATEUR']}
+    assert ajouter_bio('Tom.clv', 'Ego similis valde conditus litterarum stews, opera honestatis, ubi quaedam flax sensus reponit buxom salutem classical eras. Ego aetas mea. ubi quaedam.') == {'status': 2, 'data': ['INPUT Length superior at 150']}
+    #Vérification de l'éxécution
+    assert info_util('Tom.clv') == (({'status': 0, 'data': [{'id_utilisateur': 1, 'pseudo_utilisateur': 'Tom.clv', 'bio': 'Ego similis valde conditus litterarum stews, opera honestatis, ubi quaedam flax sensus reponit buxom salutem classical eras.'}]}))
 
+    #test modifier_bio
+    assert modifier_bio('Tom.clv', 'voici une super bio') == {'status' : 0, 'data' : []}
+    assert modifier_bio('Jean_claude', 'voici une bio de test') == {'status' : 1, 'data' : ['INPUT Not Registered in UTILISATEUR']}
+    assert modifier_bio('Nyn.luk', 'voici une bio de test') == {'status' : 2, 'data' : ['INPUT There is no bio']}
+    assert modifier_bio('Dorian.jsr', 'voici une bio de test') == {'status' :2, 'data' : ['INPUT There is no bio']}
+    #Vérification de l'éxécution
+    assert info_util('Tom.clv') == (({'status': 0, 'data': [{'id_utilisateur': 1, 'pseudo_utilisateur': 'Tom.clv', 'bio': 'voici une super bio'}]}))
+
+    os.remove('BDDtest.db')
+    DB_FILE = 'BDD.db'

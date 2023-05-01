@@ -3,7 +3,8 @@ DROP TABLE IF EXISTS AMITIE;
 
 CREATE TABLE UTILISATEUR(
     id_utilisateur INTEGER PRIMARY KEY AUTOINCREMENT, 
-	pseudo_utilisateur varchar(20) UNIQUE 
+	pseudo_utilisateur varchar(20) UNIQUE,
+	bio varchar(150)
 );
 
 CREATE TABLE AMITIE(
